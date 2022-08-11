@@ -1,34 +1,51 @@
-// Go 支持[_匿名函数_](http://zh.wikipedia.org/wiki/%E5%8C%BF%E5%90%8D%E5%87%BD%E6%95%B0)，
-// 并能用其构造 <a href="http://zh.wikipedia.org/wiki/%E9%97%AD%E5%8C%85_(%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6)"><em>闭包</em></a>。
-// 匿名函数在你想定义一个不需要命名的内联函数时是很实用的。
+// `go` 和 `git` 这种命令行工具，都有很多的 *子命令* 。
+// 并且每个工具都有一套自己的 flag，比如：
+// `go build` 和 `go get` 是 `go` 里面的两个不同的子命令。
+// `flag` 包让我们可以轻松的为工具定义简单的子命令。
 
 package main
 
-import "fmt"
-
-// `intSeq` 函数返回一个在其函数体内定义的匿名函数。
-// 返回的函数使用闭包的方式 _隐藏_ 变量 `i`。
-// 返回的函数 _隐藏_ 变量 `i` 以形成闭包。
-func intSeq() func() int {
-	i := 0
-	return func() int {
-		i++
-		return i
-	}
-}
+import (
+	"flag"
+	"fmt"
+	"os"
+)
 
 func main() {
 
-	// 我们调用 `intSeq` 函数，将返回值（一个函数）赋给 `nextInt`。
-	// 这个函数的值包含了自己的值 `i`，这样在每次调用 `nextInt` 时，都会更新 `i` 的值。
-	nextInt := intSeq()
+	// 我们使用 `NewFlagSet` 函数声明一个子命令，
+	// 然后为这个子命令定义一个专用的 flag。
+	fooCmd := flag.NewFlagSet("foo", flag.ExitOnError)
+	fooEnable := fooCmd.Bool("enable", false, "enable")
+	fooName := fooCmd.String("name", "", "name")
 
-	// 通过多次调用 `nextInt` 来看看闭包的效果。
-	fmt.Println(nextInt())
-	fmt.Println(nextInt())
-	fmt.Println(nextInt())
+	// 对于不同的子命令，我们可以定义不同的 flag。
+	barCmd := flag.NewFlagSet("bar", flag.ExitOnError)
+	barLevel := barCmd.Int("level", 0, "level")
 
-	// 为了确认这个状态对于这个特定的函数是唯一的，我们重新创建并测试一下。
-	newInts := intSeq()
-	fmt.Println(newInts())
+	// 子命令应作为程序的第一个参数传入。
+	if len(os.Args) < 2 {
+		fmt.Println("expected 'foo' or 'bar' subcommands")
+		os.Exit(1)
+	}
+
+	// 检查哪一个子命令被调用了。
+	switch os.Args[1] {
+
+	// 每个子命令，都会解析自己的 flag 并允许它访问后续的位置参数。
+	case "foo":
+		fooCmd.Parse(os.Args[2:])
+		fmt.Println("subcommand 'foo'")
+		fmt.Println("  enable:", *fooEnable)
+		fmt.Println("  name:", *fooName)
+		fmt.Println("  tail:", fooCmd.Args())
+	case "bar":
+		barCmd.Parse(os.Args[2:])
+		fmt.Println("subcommand 'bar'")
+		fmt.Println("  level:", *barLevel)
+		fmt.Println("  tail:", barCmd.Args())
+	default:
+		fmt.Println("expected 'foo' or 'bar' subcommands")
+		os.Exit(1)
+	}
 }
