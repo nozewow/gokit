@@ -1,51 +1,28 @@
-// `go` 和 `git` 这种命令行工具，都有很多的 *子命令* 。
-// 并且每个工具都有一套自己的 flag，比如：
-// `go build` 和 `go get` 是 `go` 里面的两个不同的子命令。
-// `flag` 包让我们可以轻松的为工具定义简单的子命令。
-
+// Go 支持字符、字符串、布尔和数值 _常量_ 。
 package main
 
 import (
-	"flag"
 	"fmt"
-	"os"
+	"math"
 )
 
+// `const` 用于声明一个常量。
+const s string = "constant"
+
 func main() {
+	fmt.Println(s)
 
-	// 我们使用 `NewFlagSet` 函数声明一个子命令，
-	// 然后为这个子命令定义一个专用的 flag。
-	fooCmd := flag.NewFlagSet("foo", flag.ExitOnError)
-	fooEnable := fooCmd.Bool("enable", false, "enable")
-	fooName := fooCmd.String("name", "", "name")
+	// `const` 语句可以出现在任何 `var` 语句可以出现的地方
+	const n = 500000000
 
-	// 对于不同的子命令，我们可以定义不同的 flag。
-	barCmd := flag.NewFlagSet("bar", flag.ExitOnError)
-	barLevel := barCmd.Int("level", 0, "level")
+	// 常数表达式可以执行任意精度的运算
+	const d = 3e20 / n
+	fmt.Println(d)
 
-	// 子命令应作为程序的第一个参数传入。
-	if len(os.Args) < 2 {
-		fmt.Println("expected 'foo' or 'bar' subcommands")
-		os.Exit(1)
-	}
+	// 数值型常量没有确定的类型，直到被给定某个类型，比如显式类型转化。
+	fmt.Println(int64(d))
 
-	// 检查哪一个子命令被调用了。
-	switch os.Args[1] {
-
-	// 每个子命令，都会解析自己的 flag 并允许它访问后续的位置参数。
-	case "foo":
-		fooCmd.Parse(os.Args[2:])
-		fmt.Println("subcommand 'foo'")
-		fmt.Println("  enable:", *fooEnable)
-		fmt.Println("  name:", *fooName)
-		fmt.Println("  tail:", fooCmd.Args())
-	case "bar":
-		barCmd.Parse(os.Args[2:])
-		fmt.Println("subcommand 'bar'")
-		fmt.Println("  level:", *barLevel)
-		fmt.Println("  tail:", barCmd.Args())
-	default:
-		fmt.Println("expected 'foo' or 'bar' subcommands")
-		os.Exit(1)
-	}
+	// 一个数字可以根据上下文的需要（比如变量赋值、函数调用）自动确定类型。
+	// 举个例子，这里的 `math.Sin` 函数需要一个 `float64` 的参数，`n` 会自动确定类型。
+	fmt.Println(math.Sin(n))
 }
