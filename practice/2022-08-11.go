@@ -1,34 +1,42 @@
-// Go 提供了对 [base64 编解码](http://zh.wikipedia.org/wiki/Base64)的内建支持。
+// _关闭_ 一个通道意味着不能再向这个通道发送值了。
+// 该特性可以向通道的接收方传达工作已经完成的信息。
 
 package main
 
-// 这个语法引入了 `encoding/base64` 包，
-// 并使用别名 `b64` 代替默认的 `base64`。这样可以节省点空间。
-import (
-	b64 "encoding/base64"
-	"fmt"
-)
+import "fmt"
 
+// 在这个例子中，我们将使用一个 `jobs` 通道，将工作内容，
+// 从 `main()` 协程传递到一个工作协程中。
+// 当我们没有更多的任务传递给工作协程时，我们将 `close` 这个 `jobs` 通道。
 func main() {
+	jobs := make(chan int, 5)
+	done := make(chan bool)
 
-	// 这是要编解码的字符串。
-	data := "abc123!?$*&()'-=@~"
+	// 这是工作协程。使用 `j, more := <- jobs` 循环的从 `jobs` 接收数据。
+	// 根据接收的第二个值，如果 `jobs` 已经关闭了，
+	// 并且通道中所有的值都已经接收完毕，那么 `more` 的值将是 `false`。
+	// 当我们完成所有的任务时，会使用这个特性通过 `done` 通道通知 main 协程。
+	go func() {
+		for {
+			j, more := <-jobs
+			if more {
+				fmt.Println("received job", j)
+			} else {
+				fmt.Println("received all jobs")
+				done <- true
+				return
+			}
+		}
+	}()
 
-	// Go 同时支持标准 base64 以及 URL 兼容 base64。
-	// 这是使用标准编码器进行编码的方法。
-	// 编码器需要一个 `[]byte`，因此我们将 string 转换为该类型。
-	sEnc := b64.StdEncoding.EncodeToString([]byte(data))
-	fmt.Println(sEnc)
+	// 使用 `jobs` 发送 3 个任务到工作协程中，然后关闭 `jobs`。
+	for j := 1; j <= 3; j++ {
+		jobs <- j
+		fmt.Println("sent job", j)
+	}
+	close(jobs)
+	fmt.Println("sent all jobs")
 
-	// 解码可能会返回错误，如果不确定输入信息格式是否正确，
-	// 那么，你就需要进行错误检查了。
-	sDec, _ := b64.StdEncoding.DecodeString(sEnc)
-	fmt.Println(string(sDec))
-	fmt.Println()
-
-	// 使用 URL base64 格式进行编解码。
-	uEnc := b64.URLEncoding.EncodeToString([]byte(data))
-	fmt.Println(uEnc)
-	uDec, _ := b64.URLEncoding.DecodeString(uEnc)
-	fmt.Println(string(uDec))
+	// 使用前面学到的[通道同步](channel-synchronization)方法等待任务结束。
+	<-done
 }
