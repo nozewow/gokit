@@ -1,36 +1,34 @@
-// 在 Go 中，_数组_ 是一个具有编号且长度固定的元素序列。
+// Go 提供了对 [base64 编解码](http://zh.wikipedia.org/wiki/Base64)的内建支持。
 
 package main
 
-import "fmt"
+// 这个语法引入了 `encoding/base64` 包，
+// 并使用别名 `b64` 代替默认的 `base64`。这样可以节省点空间。
+import (
+	b64 "encoding/base64"
+	"fmt"
+)
 
 func main() {
 
-	// 这里我们创建了一个刚好可以存放 5 个 `int` 元素的数组 `a`。
-	// 元素的类型和长度都是数组类型的一部分。
-	// 数组默认值是零值，对于 `int` 数组来说，元素的零值是 `0`。
-	var a [5]int
-	fmt.Println("emp:", a)
+	// 这是要编解码的字符串。
+	data := "abc123!?$*&()'-=@~"
 
-	// 我们可以使用 `array[index] = value` 语法来设置数组指定位置的值，
-	// 或者用 `array[index]` 得到值。
-	a[4] = 100
-	fmt.Println("set:", a)
-	fmt.Println("get:", a[4])
+	// Go 同时支持标准 base64 以及 URL 兼容 base64。
+	// 这是使用标准编码器进行编码的方法。
+	// 编码器需要一个 `[]byte`，因此我们将 string 转换为该类型。
+	sEnc := b64.StdEncoding.EncodeToString([]byte(data))
+	fmt.Println(sEnc)
 
-	// 内置函数 `len` 可以返回数组的长度。
-	fmt.Println("len:", len(a))
+	// 解码可能会返回错误，如果不确定输入信息格式是否正确，
+	// 那么，你就需要进行错误检查了。
+	sDec, _ := b64.StdEncoding.DecodeString(sEnc)
+	fmt.Println(string(sDec))
+	fmt.Println()
 
-	// 使用这个语法在一行内声明并初始化一个数组。
-	b := [5]int{1, 2, 3, 4, 5}
-	fmt.Println("dcl:", b)
-
-	// 数组类型是一维的，但是你可以组合构造多维的数据结构。
-	var twoD [2][3]int
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 3; j++ {
-			twoD[i][j] = i + j
-		}
-	}
-	fmt.Println("2d: ", twoD)
+	// 使用 URL base64 格式进行编解码。
+	uEnc := b64.URLEncoding.EncodeToString([]byte(data))
+	fmt.Println(uEnc)
+	uDec, _ := b64.URLEncoding.DecodeString(uEnc)
+	fmt.Println(string(uDec))
 }
